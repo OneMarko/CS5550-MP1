@@ -23,6 +23,9 @@ Reminders from the handout (Section 1.2):
 """
 
 # The canonical action order. Filter this list; do not reorder it.
+from turtle import pos
+
+
 ACTION_ORDER = ['MOVE_UP', 'MOVE_DOWN', 'MOVE_LEFT', 'MOVE_RIGHT', 'CLEAN']
 
 # Row/column offsets for the four movement actions.
@@ -47,7 +50,11 @@ class VacuumWorld:
         Suggested attributes to set here: self.grid, self.rows, self.cols,
         self.start, self.dirty.
         """
-        raise NotImplementedError("Part 1: implement VacuumWorld.__init__")
+        self.grid = tuple(tuple(row) for row in grid)
+        self.rows = len(self.grid)
+        self.cols = len(self.grid[0]) if self.rows > 0 else 0
+        self.start = tuple(start)
+        self.dirty = frozenset(tuple(cell) for cell in dirty)
 
     # -- helpers ---------------------------------------------------------
     # These two are not graded directly and not called by the test harness,
@@ -55,41 +62,68 @@ class VacuumWorld:
 
     def in_bounds(self, pos):
         """Return True if pos is inside the grid."""
-        raise NotImplementedError("Part 1: implement in_bounds (optional)")
+        row, col = pos
+        return 0 <= row < self.rows and 0 <= col < self.cols
+        
 
     def is_passable(self, pos):
         """Return True if pos is in bounds and is not an obstacle."""
-        raise NotImplementedError("Part 1: implement is_passable (optional)")
+        return self.in_bounds(pos) and self.grid[pos[0]][pos[1]] != '#'
+
+        
 
     # -- problem interface -----------------------------------------------
 
     def initial_state(self):
         """Return the initial state as ((row, col), frozenset(dirty))."""
-        raise NotImplementedError("Part 1: implement initial_state")
+        return (self.start, self.dirty)
+        
 
     def is_goal(self, state):
         """Return True if the dirty set in `state` is empty."""
-        raise NotImplementedError("Part 1: implement is_goal")
+        return len(state[1]) == 0
+        
 
     def get_actions(self, state):
         """Return a list of legal action names available in `state`.
-
         Legal means: moves stay in bounds and off obstacles, and CLEAN is
         only offered when the robot's current cell is dirty. Return the
         actions in ACTION_ORDER order.
         """
-        raise NotImplementedError("Part 1: implement get_actions")
+        pos, dirty = state
+        legal_actions = []
+        for action in ACTION_ORDER:
+            if action == 'CLEAN':
+                if pos in dirty:
+                    legal_actions.append(action)
+            else:
+                delta = DELTAS[action]
+                new_pos = (pos[0] + delta[0], pos[1] + delta[1])
+                if self.is_passable(new_pos):
+                    legal_actions.append(action)
+        return legal_actions
+        
 
     def result(self, state, action):
         """Return the successor state produced by applying `action`.
 
         Must not modify `state`.
         """
-        raise NotImplementedError("Part 1: implement result")
+        pos, dirty = state
+        if action == 'CLEAN':
+            new_dirty = dirty - {pos}
+            return (pos, new_dirty)
+        else:
+            delta = DELTAS[action]
+            new_pos = (pos[0] + delta[0], pos[1] + delta[1])
+            return (new_pos, dirty)
+        
+        
 
     def action_cost(self, state, action):
         """Return the cost of `action` in `state` (always 1 here)."""
-        raise NotImplementedError("Part 1: implement action_cost")
+        return 1
+        
 
     # -- debugging -------------------------------------------------------
 
@@ -102,17 +136,36 @@ class VacuumWorld:
         This is not graded for correctness, but you will use it constantly
         while debugging. Write it first.
         """
-        raise NotImplementedError("Part 1: implement render")
-
+        if state is None:
+            state = self.initial_state()
+        pos, dirty = state
+        lines = []
+        for r in range(self.rows):
+            line = []
+            for c in range(self.cols):
+                cell = self.grid[r][c]
+                if cell == '#':
+                    line.append('#')
+                elif (r, c) == pos and (r, c) in dirty:
+                    line.append('*')  # robot on dirty cell
+                elif (r, c) == pos:
+                    line.append('R')  # robot on clean cell
+                elif (r, c) in dirty:
+                    line.append('D')  # dirty cell
+                else:
+                    line.append('.')  # clean and empty
+            lines.append(''.join(line))
+        return '\n'.join(lines)
+        
     def __str__(self):
         return self.render()
 
 
 if __name__ == "__main__":
-    # Quick manual check once you have implemented the class:
-    from test_grids import EXAMPLE, parse_grid
-
-    grid, start, dirty = parse_grid(EXAMPLE)
+    # Self-contained quick manual check; this module can run without test_grids.
+    grid = ["...", ".#.", "..."]
+    start = (0, 0)
+    dirty = {(0, 2), (2, 1)}
     problem = VacuumWorld(grid, start, dirty)
     print(problem.render())
     print("initial state:", problem.initial_state())
