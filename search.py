@@ -60,7 +60,31 @@ def dfs_search(problem):
     Hint: push (state, path_so_far) pairs. Push successors in reversed()
     order if you want the stack to explore them in ACTION_ORDER order.
     """
-    raise NotImplementedError("Part 2a: implement dfs_search")
+    
+    # stack of state and path_so_far
+    stack = [(problem.initial_state(), [])]
+    explored = set()
+    nodes_expanded = 0
+    max_frontier_size = 1
+    
+    while stack :
+        state, path_so_far = stack.pop()
+        if problem.is_goal(state):
+            return path_so_far, nodes_expanded, max_frontier_size
+        
+        if state not in explored:
+            explored.add(state)
+            nodes_expanded += 1
+            
+            for action in reversed(problem.get_actions(state)):
+                next_state = problem.result(state, action)
+                stack.append((next_state, path_so_far + [action]))
+        
+        max_frontier_size = max(max_frontier_size, len(stack))
+    
+    return None, nodes_expanded, max_frontier_size
+
+
 
 
 def astar_search(problem, heuristic):
@@ -87,8 +111,36 @@ def astar_search(problem, heuristic):
     came_from[state] = (parent_state, action) to rebuild the path at the
     end. A helper like _reconstruct() below keeps the main loop readable.
     """
-    raise NotImplementedError("Part 2b: implement astar_search")
-
+    start = problem.initial_state()
+    frontier = PriorityQueue()
+    frontier.push(start, heuristic(start, problem))
+    came_from = {start: (None, None)}
+    g = {start: 0}
+    nodes_expanded = 0
+    max_frontier_size = 1
+    
+    while frontier:
+        current = frontier.pop()
+        
+        if problem.is_goal(current):
+            return _reconstruct(came_from, current), nodes_expanded, max_frontier_size
+        
+        nodes_expanded += 1
+        
+        for action in problem.get_actions(current):
+            next_state = problem.result(current, action)
+            tentative_g = g[current] + problem.action_cost(current, action)
+            
+            if next_state not in g or tentative_g < g[next_state]:
+                g[next_state] = tentative_g
+                f_value = tentative_g + heuristic(next_state, problem)
+                frontier.push(next_state, f_value)
+                came_from[next_state] = (current, action)
+        
+        max_frontier_size = max(max_frontier_size, len(frontier))
+        
+    return None, nodes_expanded, max_frontier_size
+    
 
 def _reconstruct(came_from, state):
     """Walk came_from backwards from `state` and return the action list.
@@ -100,7 +152,11 @@ def _reconstruct(came_from, state):
     Returns:
         List of actions from the initial state to `state`.
     """
-    raise NotImplementedError("Part 2b: implement _reconstruct (optional helper)")
+    actions = []
+    while state in came_from and came_from[state][0] is not None:
+        state, action = came_from[state]
+        actions.append(action)
+    return list(reversed(actions))
 
 
 def idastar_search(problem, heuristic):
@@ -136,7 +192,44 @@ def idastar_search(problem, heuristic):
     where search(state, g, threshold) returns FOUND, or the smallest
     f-value it saw that exceeded the threshold, or math.inf.
     """
-    raise NotImplementedError("Part 2c: implement idastar_search")
+    start = problem.initial_state()
+    threshold = heuristic(start, problem)
+    nodes_expanded = 0
+    iterations = 0
+    
+    solution = None
+    
+    def search(state, g, threshold, path, actions):
+        nonlocal nodes_expanded, solution
+        f_value = g + heuristic(state, problem)
+        
+        if f_value > threshold:
+            return f_value
+        
+        if problem.is_goal(state):
+            solution = actions
+            return FOUND
+        
+        nodes_expanded += 1
+        min_threshold = math.inf
+        
+        for action in problem.get_actions(state):
+            next_state = problem.result(state, action)
+            if next_state not in path:  # Avoid cycles
+                result = search(next_state, g + problem.action_cost(state, action), threshold, path | {next_state}, actions + [action])
+                if result == FOUND:
+                    return FOUND
+                min_threshold = min(min_threshold, result)
+        
+        return min_threshold
+    while True:
+        iterations += 1
+        result = search(start, 0, threshold, {start}, [])
+        if result == FOUND:
+            return solution, nodes_expanded, iterations
+        if result == math.inf:
+            return None, nodes_expanded, iterations
+        threshold = result
 
 
 if __name__ == "__main__":
