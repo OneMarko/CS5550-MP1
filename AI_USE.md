@@ -11,7 +11,7 @@ Tool: Claude (Anthropic), used through the claude.ai chat interface.
 | Part 3 (`heuristics.py`) | Reviewed the code I wrote and pointed out the leftover `raise NotImplementedError` lines. I wrote the functions. Also helped debug the code when I couldn't figure out the errors in my code | Moderate  |
 | Part 2 (`search.py`) | Reviewed my DFS, A*, and IDA*. Found the misplaced `return None` in A*, the wrong method name in IDA*, and the missing path tracking in IDA*. Gave short code snippets showing the fixes for the IDA* path tracking and for the expanded-node counter in A*. I applied them | Small |
 | Part 4 (`plots.py`) | Wrote the plotting and table script that reads `results.csv` | One file |
-| Report | Edited grammar and wording of text I wrote, and flagged statements to check | One pass |
+| Report | Edited grammar and wording of text I wrote, and flagged statements to check. Guided paraphrasing and use of right words for explanations and context | 
 | Documentation | Provided a guide and helped draft the README.md file|
 
 ## What I wrote myself
